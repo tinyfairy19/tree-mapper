@@ -1,112 +1,130 @@
 # Tree Mapper
 
-移动端离线单木数据野外查看、验证与编辑工具。
+> A mobile offline tool for field tree data viewing, verification, and editing.
 
-## 平台
+[**简体中文**](README_CN.md)
 
-- **网页版**：打开 `index.html` 直接在浏览器中使用
-- **安卓版**：通过 Capacitor 打包为 APK，完全离线运行
+---
 
-## 数据格式
+## Platform
 
-支持导入 CSV 文件（UTF-8 或 GBK 编码），包含以下字段：
+- **Web** — open `index.html` in any browser
+- **Android** — packaged as an APK via Capacitor, fully offline
 
-| 字段 | 必需 | 说明 |
-|------|------|------|
-| `lidar_id` / `id` | ✅ | 树木唯一标识 |
-| `x` | ✅ | X 坐标 (m) |
-| `y` | ✅ | Y 坐标 (m) |
-| `dbh` | | 胸径 (cm) |
-| `height` | | 树高 (m) |
-| `branch_height` | | 枝下高 (m) |
-| `window` | | 生长窗口 |
-| `real_id` | | 实地调查编号 |
-| `notes` | | 备注 |
+---
 
-系统支持字段映射弹框，兼容不同列名。
+## Data Format
 
-## 工作流程
+Import CSV files (UTF-8 or GBK encoding) with the following fields:
 
-```
-CSV 数据导入
-    ↓
-字段映射 → 二维画布显示单木分布
-    ↓
-双指缩放 / 单指平移浏览
-    ↓
-旋转滑块调整视角
-    ↓
-单击树木：首次红色高亮，再次打开编辑面板
-长按空地：新增树木（十字线定位）
-    ↓
-修改属性（坐标、DBH、树高等）
-    ↓
-通过数据表查看/排序/定位
-    ↓
-导出修改后的 CSV
-```
+| Field | Required | Description |
+|-------|:--------:|-------------|
+| `lidar_id` / `id` | ✅ | Unique tree identifier |
+| `x` | ✅ | X coordinate (m) |
+| `y` | ✅ | Y coordinate (m) |
+| `dbh` | | Diameter at breast height (cm) |
+| `height` | | Tree height (m) |
+| `branch_height` | | Height to first branch (m) |
+| `window` | | Growth window |
+| `real_id` | | Field survey ID |
+| `notes` | | Remarks |
 
-## 主要功能
+A field-mapping dialog handles mismatched column names automatically.
 
-### 数据管理
-- **CSV 导入**：自动检测字段映射，支持 UTF-8 / GBK 编码，支持单位换算
-- **CSV 导出**：导出旋转后的坐标 + 全部属性，BOM 头兼容 Excel
-- **自动保存**：编辑后自动写入 IndexedDB，关闭再打开数据不丢失
-- **操作日志**：记录每次新增/编辑/删除，支持撤销重做，支持回退到指定操作
-- **一键清空**：清除所有树木和边界点，有数据时二次确认
+---
 
-### 画布交互
-- **单指拖拽**：平移视口
-- **双指缩放**：以初始锚点为中心缩放，锁定不漂移
-- **旋转**：底部滑块调整旋转角度（0-360°），支持锁定
-- **显示开关**：Tree ID / DBH / Real ID 标签独立控制
-- **DBH 比例**：滑块调整树木圆点大小
-
-### 树木颜色
-| 来源 | 填充色 | 边框色 |
-|------|--------|--------|
-| 导入 (imported) | 🟢 绿色 | 深绿 |
-| 新增 (added) | 🟡 黄色 | 深黄 |
-| 选中/高亮 | 🔴 红色 | 深红 |
-
-### 数据表
-- 点击 📊 打开，显示旋转后坐标
-- 支持 ⬆⬇ 排序：点击表头升序 → 降序 → 恢复默认
-- ⊕ 按钮定位树木到画布中心
-- 单击行打开编辑面板
-
-### 样地边界
-- 点击 📍 导入边界点文件（支持 `Index,X,Y,Z,...` 格式）
-- 以小黑圆点显示在画布上
-- 随旋转同步转动
-- 边界点自动持久化，APP 重启后依然显示
-- 不参与保存/导出操作
-
-### 其他
-- **撤销/重做**：↩ / ↪ 按钮
-- **键盘快捷键**：Ctrl+Z 撤销，Ctrl+Shift+Z 重做
-- **操作日志**：底部面板可展开/折叠
-
-## 技术架构
+## Workflow
 
 ```
-index.html          → 主页面
-css/style.css       → 样式
+LiDAR Scan → Single-tree Segmentation → CSV Export
+                      ↓
+              Import into TreeMapper
+                      ↓
+         Field Verification on Phone/Tablet
+                      ↓
+              Export Completed CSV
+```
+
+1. **LiDAR Scanning + Segmentation** — acquire plot point cloud via terrestrial/backpack/UAV LiDAR, then run single-tree segmentation to generate seed points (`lidar_id, x, y`).
+2. **Import into TreeMapper** — load the seed point CSV with one tap; trees appear instantly on the 2D canvas.
+3. **Field Verification** — take your phone/tablet into the plot, match each tree against the canvas, and record DBH, height, notes, etc.
+4. **Export** — export the completed CSV with both original and rotation-adjusted coordinates.
+
+---
+
+## Features
+
+### Data Management
+
+- **CSV Import** — auto-detects field mapping, supports UTF-8 / GBK encoding, optional unit conversion
+- **CSV Export** — exports rotated coordinates + all attributes, BOM header for Excel compatibility
+- **Auto-save** — edits persist automatically in IndexedDB; close and reopen without data loss
+- **Operation History** — every add/edit/delete is logged; full undo/redo and rollback to any point
+- **Clear All** — reset all trees and boundary points, with confirmation when data exists
+
+### Canvas Interaction
+
+- **Pan** — single-finger drag
+- **Zoom** — two-finger pinch, locks anchor point without drift
+- **Rotate** — bottom slider adjusts rotation angle (0–360°), with lock option
+- **Labels** — toggle Tree ID / DBH / Real ID labels independently
+- **DBH Scale** — slider adjusts tree marker size
+
+### Tree Colors
+
+| Source | Fill | Border |
+|--------|------|--------|
+| Imported | 🟢 Green | Dark green |
+| Added | 🟡 Yellow | Dark yellow |
+| Selected | 🔴 Red | Dark red |
+
+### Data Table
+
+- Tap the 📊 tree-count badge to open
+- Click any column header to sort ascending → descending → default
+- ⊕ button centers the tree on the canvas
+- Click a row to open the edit panel
+- Panel edits refresh the table in real time
+
+### Plot Boundary
+
+- Import boundary point file via 📍 button (supports `Index,X,Y,Z,...` format)
+- Displayed as small black dots on the canvas
+- Rotates in sync with the main canvas
+- Persisted automatically across sessions
+- Not included in tree save/export operations
+
+### Other
+
+- **Undo / Redo** — ↩ / ↪ buttons and keyboard shortcuts (`Ctrl+Z` / `Ctrl+Shift+Z`)
+- **Operation Log** — expandable bottom panel
+- **Language** — toggle between 中文 / EN in the toolbar
+- **Keyboard shortcuts** — `Ctrl+Z` undo, `Ctrl+Shift+Z` redo
+
+---
+
+## Architecture
+
+```
+index.html              → Main page
+css/style.css           → Styles
 js/
-  app.js            → 主入口，串联所有模块
-  canvas.js         → Canvas 渲染引擎 + 触控交互
-  csv.js            → CSV 导入导出（PapaParse）
-  store.js          → IndexedDB 封装
-  history.js        → 操作历史（撤销/重做）
-  panel.js          → 编辑面板
-  utils.js          → 工具函数（旋转、坐标变换）
+  app.js                → Entry point, wires all modules
+  canvas.js             → Canvas rendering engine + touch interaction
+  csv.js                → CSV import/export (PapaParse)
+  store.js              → IndexedDB wrapper
+  history.js            → Operation history (undo/redo)
+  panel.js              → Edit panel
+  utils.js              → Utilities (rotation, coordinate transforms)
 lib/
-  papaparse.min.js  → CSV 解析库
+  papaparse.min.js      → CSV parsing library
 ```
 
-Android 端通过 `MainActivity.java` 暴露原生接口 `ImportHelper` / `ExportHelper`，实现文件选择器访问和 Download 保存。
+The Android build exposes native file-picker access via `MainActivity.java` through `ImportHelper` / `ExportHelper` helpers.
 
-## 测试数据
+---
 
-- `sample_data.csv` — 15 棵单木示例数据
-- `sample_boundary.txt` — 样地边界测试文件（8 个点）
+## Test Data
+
+- `sample_data.csv` — 15 sample trees
+- `sample_boundary.txt` — 8-point plot boundary
