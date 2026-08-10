@@ -109,4 +109,3 @@ Android 端通过 `MainActivity.java` 暴露原生接口 `ImportHelper` / `Expor
 ## 测试数据
 
 - `sample_data.csv` — 15 棵单木示例数据
-- `sample_boundary.txt` — 样地边界测试文件（8 个点）

@@ -127,4 +127,3 @@ The Android build exposes native file-picker access via `MainActivity.java` thro
 ## Test Data
 
 - `sample_data.csv` — 15 sample trees
-- `sample_boundary.txt` — 8-point plot boundary
