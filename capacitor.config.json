@@ -1,0 +1,11 @@
+{
+  "appId": "com.treemapper.app",
+  "appName": "Tree Mapper",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

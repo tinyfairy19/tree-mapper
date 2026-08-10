@@ -1,0 +1,11 @@
+node_modules/
+android/app/build/
+android/capacitor-cordova-android-plugins/
+android/.idea/
+.vscode/
+.claude/
+archive/
+微信公众号.md
+*.log
+.DS_Store
+Thumbs.db

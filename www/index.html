@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Tree Mapper</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ====== 顶部工具栏 ====== -->
+<div id="toolbar">
+  <div class="toolbar-left">
+    <button id="btn-import" class="tb-btn tb-primary" title="导入 CSV" data-zh="📂 导入" data-en="📂 Import">📂 导入</button>
+    <button id="btn-boundary" class="tb-btn" title="导入样地边界" data-zh="📍" data-en="📍">📍</button>
+    <button id="btn-export" class="tb-btn" title="导出 CSV" data-zh="💾 导出" data-en="💾 Export">💾 导出</button>
+  </div>
+  <div class="toolbar-center">
+    <label class="plot-label" for="plot-name" data-zh="样地" data-en="Plot">样地</label>
+    <input type="text" id="plot-name" class="plot-input" data-zh="请输入..." data-en="Enter..." maxlength="20">
+  </div>
+  <div class="toolbar-right">
+    <button id="btn-lang" class="tb-btn" title="中/EN" data-zh="中" data-en="EN">中</button>
+  </div>
+</div>
+
+<!-- ====== 画布区域 ====== -->
+<div id="canvas-container">
+  <canvas id="main-canvas"></canvas>
+  <div id="canvas-actions">
+    <button id="btn-undo" class="ca-btn" title="撤销" data-zh="↩" data-en="↩" disabled>↩</button>
+    <button id="btn-redo" class="ca-btn" title="重做" data-zh="↪" data-en="↪" disabled>↪</button>
+    <button id="btn-clear" class="ca-btn ca-btn-danger" title="清除所有点" data-zh="🗑" data-en="🗑">🗑</button>
+  </div>
+  <span id="tree-count" class="canvas-count clickable" title="点击打开数据表" data-zh="共 0 棵" data-en="0 trees">共 0 棵</span>
+  <div id="crosshair" style="display:none;">
+    <div class="cross-h"></div>
+    <div class="cross-v"></div>
+  </div>
+</div>
+
+<!-- ====== 底部控制栏 ====== -->
+<div id="bottombar">
+  <div class="bb-row">
+    <label data-zh="旋转" data-en="Rotate">旋转</label>
+    <input type="range" id="rotate-slider" min="0" max="360" step="1" value="0">
+    <span id="rotate-label">0°</span>
+    <button id="btn-lock-rotate" class="lock-btn" title="锁定旋转" data-zh="🔓" data-en="🔓">🔓</button>
+  </div>
+  <div class="bb-row">
+    <label for="dbh-slider" data-zh="DBH 比例" data-en="DBH Scale">DBH 比例</label>
+    <input type="range" id="dbh-slider" min="0.01" max="0.2" step="0.01" value="0.05">
+    <span id="dbh-scale-label">0.05</span>
+  </div>
+  <div class="bb-row">
+    <span class="bb-toggle-label" data-zh="显示" data-en="Show">显示</span>
+    <label class="bb-check"><input type="checkbox" id="toggle-labels" checked> Tree ID</label>
+    <label class="bb-check"><input type="checkbox" id="toggle-dbh-labels" checked> DBH</label>
+    <label class="bb-check"><input type="checkbox" id="toggle-real-id" checked> Real ID</label>
+  </div>
+</div>
+
+<!-- ====== 操作日志 ====== -->
+<div id="log-panel" class="collapsed">
+  <div id="log-header">
+    <span data-zh="📋 操作日志" data-en="📋 Log">📋 操作日志</span>
+    <button id="btn-toggle-log" class="tb-btn">▲</button>
+  </div>
+  <div id="log-list"></div>
+</div>
+
+<!-- ====== 编辑面板 (modal) ====== -->
+<div id="edit-overlay" style="display:none;">
+  <div id="edit-panel">
+    <h3 id="edit-title" data-zh="编辑树木" data-en="Edit Tree">编辑树木</h3>
+    <div class="edit-field">
+      <label id="edit-id-label">Tree ID</label>
+      <input type="text" id="edit-id">
+    </div>
+    <div class="edit-field">
+      <label for="edit-real-id" data-zh="Real ID" data-en="Real ID">Real ID</label>
+      <input type="text" id="edit-real-id" data-zh="实地调查编号" data-en="Field survey ID">
+    </div>
+    <div class="edit-row">
+      <div class="edit-field">
+        <label>X (m)</label>
+        <input type="number" id="edit-x" step="any">
+      </div>
+      <div class="edit-field">
+        <label>Y (m)</label>
+        <input type="number" id="edit-y" step="any">
+      </div>
+    </div>
+    <div class="edit-row">
+      <div class="edit-field">
+        <label>DBH (cm)</label>
+        <input type="number" id="edit-dbh" step="any" data-zh="可选" data-en="optional">
+      </div>
+      <div class="edit-field">
+        <label>Height (m)</label>
+        <input type="number" id="edit-height" step="any" data-zh="可选" data-en="optional">
+      </div>
+    </div>
+    <div class="edit-row">
+      <div class="edit-field">
+        <label data-zh="枝下高 (m)" data-en="Branch Ht (m)">枝下高 (m)</label>
+        <input type="number" id="edit-branch-height" step="any" data-zh="可选" data-en="optional">
+      </div>
+      <div class="edit-field">
+        <label data-zh="生长窗口" data-en="Window">生长窗口</label>
+        <input type="text" id="edit-window" inputmode="decimal" data-zh="可选" data-en="optional">
+      </div>
+    </div>
+    <div class="edit-field">
+      <label>Notes</label>
+      <textarea id="edit-notes" rows="2" data-zh="备注..." data-en="Notes..."></textarea>
+    </div>
+    <div class="edit-buttons">
+      <button id="btn-delete" class="ebtn ebtn-danger" data-zh="🗑 删除" data-en="🗑 Delete">🗑 删除</button>
+      <div class="ebtn-right">
+        <button id="btn-cancel" class="ebtn" data-zh="取消" data-en="Cancel">取消</button>
+        <button id="btn-save" class="ebtn ebtn-primary" data-zh="💾 保存" data-en="💾 Save">💾 保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 删除确认弹框 ====== -->
+<div id="confirm-overlay" style="display:none;">
+  <div id="confirm-dialog">
+    <p data-zh="确定要删除这棵树吗？此操作不可恢复。" data-en="Delete this tree? This cannot be undone.">确定要删除这棵树吗？此操作不可恢复。</p>
+    <div class="confirm-buttons">
+      <button id="btn-confirm-no" class="ebtn" data-zh="取消" data-en="Cancel">取消</button>
+      <button id="btn-confirm-yes" class="ebtn ebtn-danger" data-zh="确认删除" data-en="Confirm Delete">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 日志回退确认弹框 ====== -->
+<div id="revert-overlay" style="display:none;">
+  <div id="revert-dialog">
+    <p id="revert-msg"></p>
+    <div class="confirm-buttons">
+      <button id="btn-revert-no" class="ebtn" data-zh="取消" data-en="Cancel">取消</button>
+      <button id="btn-revert-yes" class="ebtn ebtn-primary" data-zh="确认回退" data-en="Confirm Revert">确认回退</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 字段映射弹框 ====== -->
+<div id="mapping-overlay" style="display:none;">
+  <div id="mapping-dialog">
+    <h3 data-zh="📋 字段映射" data-en="📋 Field Mapping">📋 字段映射</h3>
+    <div class="mapping-info">
+      <span id="mapping-filename"></span>
+      <span class="mapping-enc">
+        <span data-zh="编码:" data-en="Encoding:">编码:</span>
+        <select id="mapping-encoding">
+          <option value="utf-8" selected>UTF-8</option>
+          <option value="gbk">GBK (中文 ANSI)</option>
+        </select>
+      </span>
+    </div>
+    <div id="mapping-table"></div>
+    <div class="mapping-preview">
+      <div class="mapping-preview-label" data-zh="预览 (前 5 行):" data-en="Preview (first 5 rows):">预览 (前 5 行):</div>
+      <div id="mapping-preview-content"></div>
+    </div>
+    <div class="mapping-buttons">
+      <button id="btn-mapping-cancel" class="ebtn" data-zh="取消" data-en="Cancel">取消</button>
+      <button id="btn-mapping-confirm" class="ebtn ebtn-primary" data-zh="确认导入" data-en="Confirm Import">确认导入</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 数据表弹框 ====== -->
+<div id="table-overlay" style="display:none;">
+  <div id="table-dialog">
+    <div class="table-dialog-header">
+      <h3 data-zh="📊 数据表" data-en="📊 Data Table">📊 数据表 (<span id="table-count">0</span> <span data-zh="棵" data-en="trees">棵</span>)</h3>
+      <button id="btn-table-close" class="tb-btn">✕</button>
+    </div>
+    <div id="table-scroll">
+      <table id="data-table">
+        <thead>
+          <tr>
+            <th class="th-locate"></th>
+            <th class="th-sort" data-key="id">Lidar ID</th>
+            <th class="th-sort" data-key="real_id">Real ID</th>
+            <th class="th-sort" data-key="x">X</th>
+            <th class="th-sort" data-key="y">Y</th>
+            <th class="th-sort" data-key="dbh">DBH</th>
+            <th class="th-sort" data-key="height">Height</th>
+            <th class="th-sort" data-key="branch_height" data-zh="枝下高" data-en="Branch Ht">枝下高</th>
+            <th class="th-sort" data-key="window" data-zh="生长窗口" data-en="Window">生长窗口</th>
+            <th class="th-sort" data-key="notes">Notes</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 隐藏的文件选择器 ====== -->
+<input type="file" id="file-input" accept=".csv,.txt,text/csv,text/plain,application/vnd.ms-excel" style="position:absolute;width:0;height:0;opacity:0;">
+<input type="file" id="boundary-input" accept=".csv,.txt,text/csv,text/plain" style="position:absolute;width:0;height:0;opacity:0;">
+
+<!-- ====== JS 依赖 ====== -->
+<script src="lib/papaparse.min.js"></script>
+<script src="lib/capacitor.js"></script>
+<script src="lib/capacitor-filesystem.js"></script>
+
+<!-- ====== 应用模块 ====== -->
+<script src="js/utils.js"></script>
+<script src="js/store.js"></script>
+<script src="js/history.js"></script>
+<script src="js/csv.js"></script>
+<script src="js/canvas.js"></script>
+<script src="js/panel.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
